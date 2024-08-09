@@ -36,7 +36,7 @@ for pkg_name in ['jax_cuda12_plugin', 'jaxlib']:
     break
 
 logger = logging.getLogger(__name__)
-
+RUNFILES_SUFFIX = '.runfiles'
 
 def _get_library_path():
   installed_path = (
@@ -48,6 +48,17 @@ def _get_library_path():
   local_path = os.path.join(
       os.path.dirname(__file__), 'pjrt_c_api_gpu_plugin.so'
   )
+  if not os.path.exists(local_path):
+    current_dir = os.path.dirname(__file__)
+    if RUNFILES_SUFFIX in current_dir:
+      r_suffix = base_path_as_str.rfind(RUNFILES_SUFFIX)
+      runfiles_dir = base_path_as_str[:r_suffix + len(RUNFILES_SUFFIX)]
+      for root, _, files in os.walk(runfiles_dir):
+        for f in files:
+          if f == 'pjrt_c_api_gpu_plugin.so':
+            local_path = os.path.join(root, f)
+            break
+
   if os.path.exists(local_path):
     logger.debug(
         'Native library %s does not exist. This most likely indicates an issue'

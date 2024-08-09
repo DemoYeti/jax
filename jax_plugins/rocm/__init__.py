@@ -15,11 +15,14 @@
 import functools
 import importlib
 import logging
+import os
 import pathlib
 import platform
 
 from jax._src.lib import xla_client
 import jax._src.xla_bridge as xb
+
+RUNFILES_SUFFIX = '.runfiles'
 
 # rocm_plugin_extension locates inside jaxlib. `jaxlib` is for testing without
 # preinstalled jax rocm plugin packages.
@@ -47,6 +50,17 @@ def _get_library_path():
   local_path = (
       base_path / 'pjrt_c_api_gpu_plugin.so'
   )
+  if not local_path.exists():
+    base_path_as_str = str(base_path)
+    if RUNFILES_SUFFIX in base_path_as_str:
+      r_suffix = base_path_as_str.rfind(RUNFILES_SUFFIX)
+      runfiles_dir = base_path_as_str[:r_suffix + len(RUNFILES_SUFFIX)]
+      for root, _, files in os.walk(runfiles_dir):
+        for f in files:
+          if f == 'pjrt_c_api_gpu_plugin.so':
+            local_path = pathlib.Path(os.path.join(root, f))
+            break
+
   if local_path.exists():
     logger.debug(
         'Native library %s does not exist. This most likely indicates an issue'
